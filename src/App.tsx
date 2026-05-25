@@ -265,24 +265,12 @@ function App() {
   if (appState === 'checkout-simulator') {
     return (
       <CheckoutSimulator 
-        onSuccess={async (paymentId, email) => {
-          try {
-            const response = await fetch(`/api/billing/verify-razorpay-payment`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentId, email })
-            });
-            const data = await response.json();
-            if (response.ok && data.success) {
-              setUser(data.user);
-              setAppState('app');
-              setActiveTab('dashboard');
-              triggerToast('Workspace Activated via Razorpay! 🚀');
-              window.history.replaceState({}, document.title, '/');
-            }
-          } catch (error) {
-            console.error('Error verifying Razorpay payment:', error);
-          }
+        onSuccess={(verifiedUser) => {
+          setUser(verifiedUser);
+          setAppState('app');
+          setActiveTab('dashboard');
+          triggerToast('Workspace Activated via Razorpay! 🚀');
+          window.history.replaceState({}, document.title, '/');
         }} 
         onCancel={() => {
           setAppState('landing');

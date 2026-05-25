@@ -2,19 +2,25 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { ingestData, generateRAGResponse } from './geminiRAG';
-import Stripe from 'stripe';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
 dotenv.config();
 
 const app = express();
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-let stripe: Stripe | null = null;
-if (stripeSecret) {
-  stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' as any });
-  console.log('✅ [Stripe]: Real Payment Client initialized.');
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+
+let razorpay: Razorpay | null = null;
+if (razorpayKeyId && razorpayKeySecret) {
+  razorpay = new Razorpay({
+    key_id: razorpayKeyId,
+    key_secret: razorpayKeySecret
+  });
+  console.log('✅ [Razorpay]: Real Standard SDK Client initialized.');
 } else {
-  console.log('💡 [Stripe]: Secret key missing. Running in premium billing simulator mode.');
+  console.log('💡 [Razorpay]: Key ID or Secret missing in .env config.');
 }
 const PORT = process.env.PORT || 5000;
 
@@ -250,13 +256,25 @@ app.post('/api/data/ingest', async (req, res) => {
   }
 });
 
-// 5. Razorpay Billing Endpoints
-app.post('/api/billing/create-checkout-session', async (req, res) => {
-  const { plan, email } = req.body;
-  if (!plan || !email) {
-    return res.status(400).json({ error: 'Plan and Email are required' });
+// 5. Razorpay Standard SDK Billing Endpoints
+app.get('/api/billing/config', (req, res) => {
+  return res.status(200).json({
+    key_id: process.env.RAZORPAY_KEY_ID || ''
+  });
+});
+
+app.post('/api/create-order', async (req, res) => {
+  const { amount, currency, receipt, email, plan } = req.body;
+
+  if (!amount || amount < 100) {
+    return res.status(400).json({ error: 'Amount is required and must be at least 100 paise (Rs 1.00).' });
   }
 
+  if (!email || !plan) {
+    return res.status(400).json({ error: 'Email and Plan selection are required.' });
+  }
+
+  // Pre-save plan selection to user record
   let user = users.find(u => u.email === email);
   if (!user) {
     user = {
@@ -274,32 +292,63 @@ app.post('/api/billing/create-checkout-session', async (req, res) => {
     user.plan = plan;
   }
 
-  // Returns the checkout simulator path for Razorpay / local gating
-  const simulatorUrl = `http://localhost:5173/checkout-simulator?plan=${plan}&email=${email}`;
-  return res.status(200).json({ url: simulatorUrl });
+  if (!razorpay) {
+    return res.status(500).json({ error: 'Razorpay SDK is not initialized. Check server credentials.' });
+  }
+
+  try {
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount), // in paise
+      currency: currency || 'INR',
+      receipt: receipt || `receipt_${Date.now()}`
+    });
+
+    console.log(`📦 [Razorpay] Order created: ${order.id} for amount: ${order.amount} paise`);
+    return res.status(200).json({
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency
+    });
+  } catch (err: any) {
+    console.error('❌ [Razorpay] Order creation error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to create Razorpay order.' });
+  }
 });
 
-app.post('/api/billing/verify-razorpay-payment', (req, res) => {
-  const { paymentId, email } = req.body;
+app.post('/api/verify-payment', (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email } = req.body;
 
-  if (!paymentId || !email) {
-    return res.status(400).json({ error: 'Payment ID and Email are required' });
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !email) {
+    return res.status(400).json({ error: 'Missing required validation fields. Ensure order_id, payment_id, signature, and email are supplied.' });
   }
 
-  // standard validation check for Razorpay Payment Reference ID formats
-  if (!paymentId.startsWith('pay_') || paymentId.length < 10) {
-    return res.status(400).json({ error: 'Invalid Razorpay Reference ID format! Must start with "pay_" (e.g. pay_Op9x8y7z).' });
-  }
+  const key_secret = process.env.RAZORPAY_KEY_SECRET || '';
+  const generated_signature = crypto
+    .createHmac('sha256', key_secret)
+    .update(razorpay_order_id + '|' + razorpay_payment_id)
+    .digest('hex');
 
-  const user = users.find(u => u.email === email);
-  if (user) {
-    user.isPaid = true;
-    user.razorpayPaymentId = paymentId;
-    console.log(`💰 [Razorpay] Subscription activated for: ${email} (Payment ID: ${paymentId})`);
-    return res.status(200).json({ success: true, user });
+  if (generated_signature === razorpay_signature) {
+    const user = users.find(u => u.email === email);
+    if (user) {
+      user.isPaid = true;
+      user.razorpayPaymentId = razorpay_payment_id;
+      user.razorpayOrderId = razorpay_order_id;
+      console.log(`💰 [Razorpay Standard] Payment verified successfully for: ${email} (Payment ID: ${razorpay_payment_id})`);
+      return res.status(200).json({ success: true, user });
+    }
+    return res.status(404).json({ error: 'User record not found.' });
+  } else {
+    console.error('❌ [Razorpay Standard] Signature verification failed mismatch');
+    return res.status(400).json({ error: 'Payment signature verification failed. Mismatch detected!' });
   }
+});
 
-  return res.status(404).json({ error: 'User record not found.' });
+// Legacy backward compatibility endpoint
+app.post('/api/billing/create-checkout-session', (req, res) => {
+  const { plan, email } = req.body;
+  const simulatorUrl = `http://localhost:5173/checkout-simulator?plan=${plan}&email=${email}`;
+  return res.status(200).json({ url: simulatorUrl });
 });
 
 app.listen(PORT, () => {

@@ -1,49 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Lock, ArrowRight, Brain, Sparkles, QrCode, CreditCard, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Lock, ArrowRight, Brain, Sparkles, QrCode, CreditCard, AlertCircle } from 'lucide-react';
 
 interface Props {
-  onSuccess: (paymentId: string, email: string) => void;
+  onSuccess: (user: any) => void;
   onCancel: () => void;
 }
 
 const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [params, setParams] = useState({ plan: 'growth', email: 'founder@startup.io' });
-  const [paymentId, setPaymentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [keyId, setKeyId] = useState('');
 
   useEffect(() => {
-    // Extract parameters from URL
+    // 1. Extract parameters from URL query
     const urlParams = new URLSearchParams(window.location.search);
     const plan = urlParams.get('plan') || 'growth';
     const email = urlParams.get('email') || 'founder@startup.io';
     setParams({ plan, email });
+
+    // 2. Fetch Razorpay key configuration dynamically
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/billing/config');
+        const data = await response.json();
+        if (response.ok && data.key_id) {
+          setKeyId(data.key_id);
+        } else {
+          setError('Failed to load payment configuration keys from the server.');
+        }
+      } catch (err) {
+        setError('Unable to reach backend to fetch API credentials.');
+      }
+    };
+    fetchConfig();
   }, []);
 
   const getPlanDetails = () => {
     switch (params.plan) {
       case 'starter':
-        return { name: 'Starter', price: '₹4,000', priceUSD: '$49', desc: '3 agents · 1k conversations/mo' };
+        return { name: 'Starter', priceINR: 49, pricePaise: 4900, desc: '3 agents · 1k conversations/mo' };
       case 'enterprise':
-        return { name: 'Enterprise', price: '₹80,000', priceUSD: '$999', desc: 'Unlimited · SLA · SSO' };
+        return { name: 'Enterprise', priceINR: 999, pricePaise: 99900, desc: 'Unlimited · SLA · SSO' };
       case 'growth':
       default:
-        return { name: 'Growth', price: '₹12,000', priceUSD: '$149', desc: '15 agents · 10k conversations/mo' };
+        return { name: 'Growth', priceINR: 149, pricePaise: 14900, desc: '15 agents · 10k conversations/mo' };
     }
   };
 
   const planInfo = getPlanDetails();
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!paymentId.trim()) {
-      setError('Please enter your Razorpay Payment ID.');
-      return;
-    }
-    
-    if (!paymentId.startsWith('pay_') || paymentId.length < 10) {
-      setError('Invalid format! Razorpay Payment IDs start with "pay_" (e.g., pay_test_Op9x8y).');
+  const handleRazorpayCheckout = async () => {
+    if (!keyId) {
+      setError('Razorpay credentials have not loaded. Please try again.');
       return;
     }
 
@@ -51,37 +60,96 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/billing/verify-razorpay-payment', {
+      // 1. Create order on the backend Express server
+      const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          paymentId: paymentId.trim(),
-          email: params.email
+          amount: planInfo.pricePaise,
+          currency: 'INR',
+          email: params.email,
+          plan: params.plan
         })
       });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setLoading(false);
-        onSuccess(paymentId.trim(), params.email);
-      } else {
-        setLoading(false);
-        setError(data.error || 'Verification failed. Please double check your Payment ID.');
+
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok || !orderData.order_id) {
+        throw new Error(orderData.error || 'Failed to create order on the server.');
       }
-    } catch (err) {
+
+      // 2. Check if Razorpay SDK is present on window
+      if (!(window as any).Razorpay) {
+        throw new Error('Razorpay SDK is not loaded. Ensure checkout.js is available.');
+      }
+
+      // 3. Configure the official Razorpay Checkout Options
+      const options = {
+        key: keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'IndraAssist OS',
+        description: `IndraAssist - ${planInfo.name} Tier Subscription`,
+        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=256&h=256&fit=crop',
+        order_id: orderData.order_id,
+        handler: async function (response: any) {
+          // Trigger signature verification on backend
+          setLoading(true);
+          try {
+            const verifyResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                email: params.email
+              })
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyResponse.ok && verifyData.success) {
+              setLoading(false);
+              onSuccess(verifyData.user);
+            } else {
+              setLoading(false);
+              setError(verifyData.error || 'Payment verification mismatch. Access denied.');
+            }
+          } catch (verr) {
+            setLoading(false);
+            setError('Payment succeeded but verification failed due to connection error.');
+          }
+        },
+        prefill: {
+          name: 'Startup Founder',
+          email: params.email,
+          contact: '9999999999'
+        },
+        theme: {
+          color: '#3399FF'
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+            setError('Payment cancelled. You closed the checkout modal.');
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any) {
+        setLoading(false);
+        setError(`Payment failed: ${response.error.description} (Error Code: ${response.error.code})`);
+      });
+
+      // 4. Fire the modal!
+      rzp.open();
+    } catch (err: any) {
       setLoading(false);
-      setError('Server connection error. Please try again.');
+      setError(err.message || 'An error occurred while launching Razorpay checkout.');
     }
-  };
-
-  const handleAutoFill = () => {
-    setPaymentId(`pay_test_${Math.random().toString(36).substring(2, 10).toUpperCase()}`);
-    setError('');
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText('https://razorpay.me/@prajyotkumar');
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
   };
 
   return (
@@ -89,9 +157,9 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
       <div style={{ position: 'fixed', top: '-10%', left: '-15%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(51,153,255,0.15) 0%, transparent 60%)', borderRadius: '50%', pointerEvents: 'none' }} />
       <div style={{ position: 'fixed', bottom: '-10%', right: '-15%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-      <div className="animate-fadeInUp" style={{ width: '100%', maxWidth: '880px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '28px', position: 'relative', zIndex: 1 }}>
+      <div className="animate-fadeInUp" style={{ width: '100%', maxWidth: '850px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '28px', position: 'relative', zIndex: 1 }}>
         
-        {/* Left Panel: Razorpay Inbound Payment */}
+        {/* Left Panel: Razorpay Secure Launch */}
         <div className="glass" style={{ borderRadius: 'var(--radius-xl)', padding: '36px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {/* Header */}
@@ -100,7 +168,7 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
               <div style={{ width: '28px', height: '28px', background: '#3399FF', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>
                 R
               </div>
-              <span style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)' }}>Razorpay Checkout <span style={{ fontSize: '0.72rem', color: '#3399FF', background: 'rgba(51,153,255,0.15)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Official Portal</span></span>
+              <span style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)' }}>Razorpay Checkout <span style={{ fontSize: '0.72rem', color: '#3399FF', background: 'rgba(51,153,255,0.15)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>SDK Standard</span></span>
             </div>
             
             <button onClick={onCancel} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }} className="hover:text-white">
@@ -108,84 +176,51 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
             </button>
           </div>
 
-          {/* Step 1: Redirect to pay */}
+          {/* Secure details instructions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-primary)' }}>Step 1: Complete Subscription Payment</h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Click below to proceed to your secure Razorpay merchant page. You can pay instantly using **UPI (GPay/PhonePe), NetBanking, or Cards**.
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)' }}>Complete Subscription Payment</h3>
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              To activate your workspace, please complete the payment using the official Razorpay Checkout gateway.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px', marginTop: '4px' }}>
-              <a 
-                href="https://razorpay.me/@prajyotkumar" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn-primary glow-primary"
-                style={{ background: '#3399FF', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', fontSize: '0.85rem', fontWeight: '700', border: 'none' }}
-              >
-                Pay via Razorpay <ArrowRight size={15} />
-              </a>
-              <button 
-                type="button" 
-                onClick={handleCopyLink} 
-                className="btn-ghost"
-                style={{ padding: '12px', fontSize: '0.85rem', borderColor: copiedLink ? 'var(--success)' : 'var(--border)', color: copiedLink ? 'var(--success)' : 'var(--text-primary)' }}
-              >
-                {copiedLink ? (<><CheckCircle size={14} style={{ marginRight: '4px' }} /> Copied</>) : 'Copy Link'}
-              </button>
-            </div>
-          </div>
-
-          <div style={{ height: '1px', background: 'var(--border)' }} />
-
-          {/* Step 2: Input and verify */}
-          <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-primary)' }}>Step 2: Verify & Activate Account</h3>
-              <button type="button" onClick={handleAutoFill} style={{ fontSize: '0.72rem', color: 'var(--primary-light)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                Autofill Test ID
-              </button>
-            </div>
-            
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Once paid, copy your **Razorpay Payment ID** (starts with `pay_`, found on your payment receipt or email) and paste it below to instantly unlock your workspace.
-            </p>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>Razorpay Payment Reference ID</label>
-              <div style={{ position: 'relative' }}>
-                <CreditCard size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  className="input-dark" 
-                  placeholder="pay_Op9x8y7z..." 
-                  value={paymentId}
-                  onChange={e => setPaymentId(e.target.value)}
-                  style={{ paddingLeft: '38px', fontFamily: 'monospace', letterSpacing: '0.05em' }} 
-                />
+            {/* Test credential notice cards */}
+            <div style={{ background: 'rgba(51,153,255,0.06)', border: '1px dashed rgba(51,153,255,0.3)', borderRadius: 'var(--radius)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#3399FF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={14} /> Razorpay Test Mode Credentials
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.72rem', color: 'var(--text-secondary)', paddingLeft: '4px' }}>
+                <div>• **Card Number**: <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-primary)' }}>4111 1111 1111 1111</span></div>
+                <div>• **Expiry**: <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-primary)' }}>12/26</span> · **CVV**: <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-primary)' }}>123</span></div>
+                <div>• **Test UPI VPA**: <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-primary)' }}>test@razorpay</span></div>
               </div>
             </div>
 
-            {error && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px 14px', borderRadius: 'var(--radius)' }}>{error}</p>}
+            {error && (
+              <div style={{ color: 'var(--danger)', fontSize: '0.8rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', padding: '10px 14px', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+            )}
 
             <button 
-              className="btn-primary" 
-              type="submit" 
-              disabled={loading}
-              style={{ width: '100%', padding: '14px', background: '#3399FF', fontSize: '0.92rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.75 : 1, border: 'none', fontWeight: '700' }}
+              onClick={handleRazorpayCheckout}
+              disabled={loading || !keyId}
+              className="btn-primary glow-primary"
+              style={{ width: '100%', padding: '14px', background: '#3399FF', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: (loading || !keyId) ? 0.75 : 1, border: 'none', fontWeight: '700' }}
             >
-              {loading ? 'Verifying payment...' : (<>Verify & Activate Workspace <Sparkles size={15} /></>)}
+              {loading ? 'Processing Payment...' : (<>Pay ₹{planInfo.priceINR}.00 with Razorpay <ArrowRight size={16} /></>)}
             </button>
-          </form>
+          </div>
 
-          {/* Secure lock */}
-          <div style={{ display: 'flex', itemsCenter: 'center', justifyContent: 'center', gap: '16px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+          {/* Secure indicator locks */}
+          <div style={{ display: 'flex', itemsCenter: 'center', justifyContent: 'center', gap: '16px', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '20px', marginTop: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Lock size={12} />
-              <span>256-bit Secure verification</span>
+              <span>TLS 256-bit Secure Gateway</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ShieldCheck size={12} />
-              <span>Razorpay Verified Merchant</span>
+              <span>Razorpay Verified API Merchant</span>
             </div>
           </div>
 
@@ -204,8 +239,8 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
 
           {/* Checkout billing details summary */}
           <div className="glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '28px', border: '1px solid var(--border-strong)', boxShadow: 'var(--shadow-card)' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-light)', textTransform: 'uppercase', tracking: '0.05em' }}>Razorpay Plan billing</span>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '6px', marginBottom: '24px' }}>{planInfo.price} <span style={{ fontSize: '0.85rem', fontWeight: '400', color: 'var(--text-secondary)' }}>/ Month</span></h3>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-light)', textTransform: 'uppercase', tracking: '0.05em' }}>Razorpay subscription billing</span>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '6px', marginBottom: '24px' }}>₹{planInfo.priceINR}.00 <span style={{ fontSize: '0.85rem', fontWeight: '400', color: 'var(--text-secondary)' }}>/ Month</span></h3>
 
             {/* Plan item summary */}
             <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
@@ -219,7 +254,7 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between' }}>
                 <span>Subtotal (INR)</span>
-                <span>{planInfo.price}</span>
+                <span>₹{planInfo.priceINR}.00</span>
               </div>
               <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between' }}>
                 <span>USD equivalent</span>
@@ -227,7 +262,7 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
               </div>
               <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between' }}>
                 <span>Verification State</span>
-                <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Awaiting ID</span>
+                <span style={{ color: 'var(--warning)', fontWeight: 600 }}>Real-Time Verification</span>
               </div>
             </div>
           </div>
@@ -237,7 +272,7 @@ const CheckoutSimulator: React.FC<Props> = ({ onSuccess, onCancel }) => {
             <QrCode size={40} color="#3399FF" style={{ opacity: 0.8 }} />
             <div>
               <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>UPI Scan & Pay Ready</div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Use your BHIM UPI app on the Razorpay hosted payment page to scan and transfer instantly!</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginTop: '2px' }}>Natively supports scan & pay via any UPI app (GPay, PhonePe, Paytm) inside the checkout portal!</div>
             </div>
           </div>
 
