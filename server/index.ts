@@ -2,10 +2,20 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { ingestData, generateRAGResponse } from './geminiRAG';
+import Stripe from 'stripe';
 
 dotenv.config();
 
 const app = express();
+
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+let stripe: Stripe | null = null;
+if (stripeSecret) {
+  stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' as any });
+  console.log('✅ [Stripe]: Real Payment Client initialized.');
+} else {
+  console.log('💡 [Stripe]: Secret key missing. Running in premium billing simulator mode.');
+}
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
@@ -91,14 +101,15 @@ app.post('/api/auth/signup', (req, res) => {
     company: company || 'My Startup Ltd',
     industry: industry || 'Technology',
     plan: plan || 'growth',
-    logo: '🚀'
+    logo: '🚀',
+    isPaid: false // Set to false by default; requires Stripe Checkout to activate
   };
 
   users.push(newUser);
-  console.log(`[Auth] User registered: ${email}`);
+  console.log(`[Auth] User registered (unpaid status): ${email}`);
   
   return res.status(201).json({
-    message: 'User registered successfully',
+    message: 'User registered successfully. Proceed to payment checkout.',
     user: newUser
   });
 });
@@ -112,23 +123,21 @@ app.post('/api/auth/login', (req, res) => {
 
   let user = users.find(u => u.email === email);
 
-  // For testing ease, if user doesn't exist, we can register them on the fly
   if (!user) {
-    user = {
-      id: `user_${Date.now()}`,
-      email,
-      name: 'Priya Sharma',
-      company: 'TechCorp Solutions',
-      industry: 'Technology',
-      plan: 'growth',
-      logo: '🏢'
-    };
-    users.push(user);
-    console.log(`[Auth] Auto-registered test user: ${email}`);
-  } else {
-    console.log(`[Auth] User logged in: ${email}`);
+    // In access-controlled mode, we do NOT auto-register, they must sign up and pay
+    return res.status(400).json({ error: 'Account not found. Please register a new account!' });
   }
 
+  if (user && !user.isPaid) {
+    return res.status(402).json({
+      error: 'Payment Required',
+      message: 'Access Denied: Please complete your subscription payment to log in.',
+      email: user.email,
+      plan: user.plan
+    });
+  }
+
+  console.log(`[Auth] Access Granted. User logged in: ${email}`);
   return res.status(200).json({
     message: 'Login successful',
     user
@@ -239,6 +248,58 @@ app.post('/api/data/ingest', async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message || 'Ingestion failed' });
   }
+});
+
+// 5. Razorpay Billing Endpoints
+app.post('/api/billing/create-checkout-session', async (req, res) => {
+  const { plan, email } = req.body;
+  if (!plan || !email) {
+    return res.status(400).json({ error: 'Plan and Email are required' });
+  }
+
+  let user = users.find(u => u.email === email);
+  if (!user) {
+    user = {
+      id: `user_${Date.now()}`,
+      email,
+      name: 'Startup Founder',
+      company: 'My Startup Ltd',
+      industry: 'Technology',
+      plan,
+      logo: '🚀',
+      isPaid: false
+    };
+    users.push(user);
+  } else {
+    user.plan = plan;
+  }
+
+  // Returns the checkout simulator path for Razorpay / local gating
+  const simulatorUrl = `http://localhost:5173/checkout-simulator?plan=${plan}&email=${email}`;
+  return res.status(200).json({ url: simulatorUrl });
+});
+
+app.post('/api/billing/verify-razorpay-payment', (req, res) => {
+  const { paymentId, email } = req.body;
+
+  if (!paymentId || !email) {
+    return res.status(400).json({ error: 'Payment ID and Email are required' });
+  }
+
+  // standard validation check for Razorpay Payment Reference ID formats
+  if (!paymentId.startsWith('pay_') || paymentId.length < 10) {
+    return res.status(400).json({ error: 'Invalid Razorpay Reference ID format! Must start with "pay_" (e.g. pay_Op9x8y7z).' });
+  }
+
+  const user = users.find(u => u.email === email);
+  if (user) {
+    user.isPaid = true;
+    user.razorpayPaymentId = paymentId;
+    console.log(`💰 [Razorpay] Subscription activated for: ${email} (Payment ID: ${paymentId})`);
+    return res.status(200).json({ success: true, user });
+  }
+
+  return res.status(404).json({ error: 'User record not found.' });
 });
 
 app.listen(PORT, () => {

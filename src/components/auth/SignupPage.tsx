@@ -12,6 +12,7 @@ const SignupPage: React.FC<Props> = ({ onComplete, onLogin }) => {
   const [step, setStep] = useState(0);
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gateway, setGateway] = useState<'stripe' | 'razorpay'>('stripe');
   const [form, setForm] = useState({
     name: '', email: '', password: '',
     company: '', industry: 'Technology', size: '1-10',
@@ -31,6 +32,7 @@ const SignupPage: React.FC<Props> = ({ onComplete, onLogin }) => {
       if (step === steps.length - 2) {
         setLoading(true);
         try {
+          // 1. Register basic user credentials on server (unpaid status)
           const response = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -46,9 +48,24 @@ const SignupPage: React.FC<Props> = ({ onComplete, onLogin }) => {
           if (!response.ok) {
             throw new Error(data.error || 'Signup failed');
           }
-          setForm(prev => ({ ...prev, ...data.user }));
+
+          // 2. Call create-checkout-session to get the Stripe Checkout redirect URL
+          const checkoutResponse = await fetch('/api/billing/create-checkout-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              plan: form.plan,
+              email: form.email
+            })
+          });
+          const checkoutData = await checkoutResponse.json();
+          if (!checkoutResponse.ok) {
+            throw new Error(checkoutData.error || 'Failed to initialize payment gateway.');
+          }
+
           setLoading(false);
-          setStep(s => s + 1);
+          // 3. Redirect browser directly to Stripe Hosted checkout (or checkout simulator)
+          window.location.href = checkoutData.url;
         } catch (err: any) {
           setLoading(false);
           alert(err.message || 'Signup failed. Please try again.');

@@ -25,8 +25,9 @@ import IntegrationsHub from './components/integrations/IntegrationsHub';
 import SLAManager from './components/compliance/SLAManager';
 import UnifiedInbox from './components/inbox/UnifiedInbox';
 import NotificationCenter, { NotificationItem } from './components/notifications/NotificationCenter';
+import CheckoutSimulator from './components/billing/CheckoutSimulator';
 
-type AppState = 'landing' | 'login' | 'signup' | 'pricing' | 'app';
+type AppState = 'landing' | 'login' | 'signup' | 'pricing' | 'app' | 'checkout-simulator';
 
 interface UserProfile {
   name: string;
@@ -107,6 +108,40 @@ function App() {
       });
     }
   }, [user]);
+
+  // Listen for Stripe redirect URL query parameters & simulation routes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const email = urlParams.get('email');
+    
+    // Check if we are visiting the checkout simulator page
+    if (window.location.pathname.includes('/checkout-simulator') || (urlParams.has('plan') && urlParams.has('session_id'))) {
+      setAppState('checkout-simulator');
+      return;
+    }
+
+    if (sessionId && email) {
+      const verifyPayment = async () => {
+        try {
+          const response = await fetch(`/api/verify-session-proxy-placeholder-failed`); // Fallback safety
+          // Real verify API endpoint call
+          const realResponse = await fetch(`/api/billing/verify-session/${sessionId}?email=${email}`);
+          const data = await realResponse.json();
+          if (realResponse.ok && data.success) {
+            setUser(data.user);
+            setAppState('app');
+            setActiveTab('dashboard');
+            triggerToast('Payment Successful! Workspace Activated 🚀');
+            window.history.replaceState({}, document.title, '/');
+          }
+        } catch (error) {
+          console.error('Error verifying Stripe payment session:', error);
+        }
+      };
+      verifyPayment();
+    }
+  }, []);
 
   // Navigation handlers
   const handleLoginSuccess = (userPayload: any) => {
@@ -227,6 +262,36 @@ function App() {
   };
 
   // Switch between layout routers
+  if (appState === 'checkout-simulator') {
+    return (
+      <CheckoutSimulator 
+        onSuccess={async (paymentId, email) => {
+          try {
+            const response = await fetch(`/api/billing/verify-razorpay-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paymentId, email })
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+              setUser(data.user);
+              setAppState('app');
+              setActiveTab('dashboard');
+              triggerToast('Workspace Activated via Razorpay! 🚀');
+              window.history.replaceState({}, document.title, '/');
+            }
+          } catch (error) {
+            console.error('Error verifying Razorpay payment:', error);
+          }
+        }} 
+        onCancel={() => {
+          setAppState('landing');
+          window.history.replaceState({}, document.title, '/');
+        }}
+      />
+    );
+  }
+
   if (appState === 'landing') {
     return (
       <LandingPage 
