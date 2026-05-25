@@ -138,97 +138,126 @@ const ChatInterface: React.FC<Props> = ({ company }) => {
   const getSentimentIcon = (sentiment: 'positive' | 'neutral' | 'negative') => {
     switch (sentiment) {
       case 'positive':
-        return <Smile className="w-4 h-4 text-green-500" />;
+        return <Smile className="w-4 h-4 text-green-400" />;
       case 'negative':
-        return <Frown className="w-4 h-4 text-red-500" />;
+        return <Frown className="w-4 h-4 text-red-400" />;
       default:
-        return <Meh className="w-4 h-4 text-yellow-500" />;
+        return <Meh className="w-4 h-4 text-yellow-400" />;
     }
   };
 
-  const getSentimentColor = (sentiment: 'positive' | 'neutral' | 'negative') => {
+  const getSentimentBadge = (sentiment: 'positive' | 'neutral' | 'negative') => {
     switch (sentiment) {
       case 'positive':
-        return 'bg-green-50 border-green-200';
+        return 'badge badge-success';
       case 'negative':
-        return 'bg-red-50 border-red-200';
+        return 'badge badge-danger';
       default:
-        return 'bg-yellow-50 border-yellow-200';
+        return 'badge badge-neutral';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border h-[600px] flex flex-col">
+    <div className="glass flex flex-col animate-fadeInUp" style={{ borderRadius: 'var(--radius-lg)', height: '600px', color: 'var(--text-primary)', overflow: 'hidden' }}>
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
-            <Bot className="w-6 h-6 text-white" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
+            <Bot size={22} color="var(--primary-light)" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">IndraAssist Chat</h3>
-            <p className="text-sm text-gray-600">AI Support for {company.name}</p>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>IndraAssist Live Chat</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '2px' }}>AI Persona configured for {company.name}</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           {/* Customer Sentiment Indicator */}
-          <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full border ${getSentimentColor(customerSentiment)}`}>
+          <div className={getSentimentBadge(customerSentiment)} style={{ display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'capitalize' }}>
             {getSentimentIcon(customerSentiment)}
-            <span className="text-sm font-medium capitalize">{customerSentiment}</span>
+            <span>{customerSentiment}</span>
           </div>
           
-          <div className="flex items-center space-x-1 text-sm text-gray-500">
-            <Globe className="w-4 h-4" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            <Globe size={14} />
             <span>EN</span>
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`flex items-start space-x-2 max-w-xs lg:max-w-md ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${message.sender === 'user' ? 'bg-gray-600' : 'bg-blue-600'}`}>
-                {message.sender === 'user' ? (
-                  <User className="w-4 h-4 text-white" />
-                ) : (
-                  <Bot className="w-4 h-4 text-white" />
-                )}
-              </div>
-              
-              <div className={`px-4 py-2 rounded-lg ${message.sender === 'user' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                <p className="text-sm">{message.text}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className={`text-xs ${message.sender === 'user' ? 'text-gray-300' : 'text-gray-500'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {message.sentiment && (
-                    <div className="ml-2">
-                      {getSentimentIcon(message.sentiment)}
-                    </div>
+      {/* Messages Scroll Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {messages.map((message) => {
+          const isUser = message.sender === 'user';
+          return (
+            <div
+              key={message.id}
+              style={{
+                display: 'flex',
+                justifyContent: isUser ? 'flex-end' : 'flex-start'
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'start',
+                gap: '10px',
+                flexDirection: isUser ? 'row-reverse' : 'row',
+                maxWidth: '75%'
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: isUser ? 'rgba(255,255,255,0.06)' : 'rgba(99,102,241,0.15)',
+                  border: isUser ? '1px solid var(--border)' : '1px solid rgba(99,102,241,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>
+                  {isUser ? (
+                    <User size={14} color="var(--text-secondary)" />
+                  ) : (
+                    <Bot size={14} color="var(--primary-light)" />
                   )}
+                </div>
+                
+                <div>
+                  <div style={{
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    background: isUser ? 'var(--gradient-primary)' : 'var(--bg-surface)',
+                    border: isUser ? 'none' : '1px solid var(--border)',
+                    fontSize: '0.83rem',
+                    lineHeight: 1.4,
+                    color: '#fff'
+                  }}>
+                    <p style={{ margin: 0 }}>{message.text}</p>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: isUser ? 'flex-end' : 'flex-start',
+                    marginTop: '4px', fontSize: '0.68rem', color: 'var(--text-muted)'
+                  }}>
+                    <span>{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {message.sentiment && !isUser && (
+                      <div style={{ marginLeft: '6px', display: 'flex', alignItems: 'center' }}>
+                        {getSentimentIcon(message.sentiment)}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="flex items-start space-x-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600">
-                <Bot className="w-4 h-4 text-white" />
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '10px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bot size={14} color="var(--primary-light)" />
               </div>
-              <div className="px-4 py-2 rounded-lg bg-gray-100">
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div style={{ padding: '12px 16px', borderRadius: '16px', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div className="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                  <div className="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                  <div className="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
                 </div>
               </div>
             </div>
@@ -238,36 +267,38 @@ const ChatInterface: React.FC<Props> = ({ company }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t">
-        <div className="flex items-center space-x-2">
-          <div className="flex-1 relative">
+      {/* Input Dock */}
+      <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message here..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="input-dark"
               rows={1}
-              style={{ minHeight: '40px', maxHeight: '120px' }}
+              style={{ minHeight: '38px', maxHeight: '120px', padding: '9px 14px', resize: 'none' }}
             />
           </div>
           <button
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isTyping}
-            className="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-primary"
+            style={{ width: '38px', height: '38px', borderRadius: 'var(--radius)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: (!inputText.trim() || isTyping) ? 0.5 : 1 }}
           >
-            <Send className="w-4 h-4" />
+            <Send size={15} />
           </button>
         </div>
         
-        {/* Quick Actions */}
-        <div className="flex flex-wrap gap-2 mt-3">
+        {/* Quick Actions / Canned inputs */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
           {['Track my order', 'Request refund', 'Technical support', 'Billing question'].map((action) => (
             <button
               key={action}
               onClick={() => setInputText(action)}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+              className="btn-ghost"
+              style={{ padding: '4px 12px', borderRadius: '99px', fontSize: '0.72rem' }}
             >
               {action}
             </button>

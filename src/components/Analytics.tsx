@@ -28,28 +28,28 @@ const Analytics: React.FC<Props> = ({ company }) => {
       value: '98.7%',
       trend: '+2.3%',
       trendDirection: 'up',
-      description: 'Queries resolved without human intervention'
+      description: 'Resolved autonomously without human agent'
     },
     {
       title: 'Customer Satisfaction',
       value: '4.8/5.0',
       trend: '+0.2',
       trendDirection: 'up',
-      description: 'Average rating from customer feedback'
+      description: 'Average score from rating forms'
     },
     {
       title: 'Response Time',
       value: '1.2s',
       trend: '-0.3s',
       trendDirection: 'down',
-      description: 'Average time to first response'
+      description: 'Average query answering speed'
     },
     {
       title: 'Escalation Rate',
       value: '2.3%',
       trend: '-1.1%',
       trendDirection: 'down',
-      description: 'Cases requiring human intervention'
+      description: 'Tickets transferred to staff'
     }
   ];
 
@@ -99,148 +99,161 @@ const Analytics: React.FC<Props> = ({ company }) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeInUp" style={{ color: 'var(--text-primary)' }}>
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
-        <p className="text-gray-600">Performance insights for {company.name}'s AI support system</p>
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>Analytics Dashboard</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>Performance insights and metrics for {company.name}'s support desk.</p>
       </div>
 
       {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
         {performanceMetrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">{metric.title}</h3>
-              <span className={`flex items-center text-sm font-medium ${
-                metric.trendDirection === 'up' ? 'text-green-600' : 'text-blue-600'
-              }`}>
-                <TrendingUp className="w-4 h-4 mr-1" />
+          <div key={index} className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{metric.title}</h3>
+              <span className="badge badge-success" style={{
+                background: metric.trendDirection === 'up' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)',
+                color: metric.trendDirection === 'up' ? '#34d399' : '#818cf8',
+                border: 'none', fontSize: '0.65rem'
+              }}>
                 {metric.trend}
               </span>
             </div>
-            <div className="mb-2">
-              <span className="text-2xl font-bold text-gray-900">{metric.value}</span>
+            <div style={{ marginBottom: '6px' }}>
+              <span style={{ fontSize: '1.8rem', fontWeight: '800' }}>{metric.value}</span>
             </div>
-            <p className="text-sm text-gray-500">{metric.description}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', margin: 0, lineHeight: 1.4 }}>{metric.description}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         {/* Hourly Activity */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
-              24-Hour Activity
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="h-64 flex items-end justify-between space-x-1">
-              {hourlyData.map((data, index) => (
-                <div key={index} className="flex flex-col items-center flex-1">
-                  <div className="flex flex-col items-center space-y-1 mb-2">
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChart3 size={18} color="var(--primary-light)" /> 24-Hour Activity
+          </h3>
+          
+          <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'between', height: '180px', gap: '4px', paddingBottom: '12px' }}>
+            {hourlyData.map((data, index) => {
+              const maxVal = 100;
+              const qHeight = Math.min((data.queries / maxVal) * 120, 120);
+              const rHeight = Math.min((data.resolved / maxVal) * 120, 120);
+
+              return (
+                <div key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'end' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center', gap: '1px' }}>
                     <div 
-                      className="w-full bg-blue-500 rounded-t"
-                      style={{ height: `${(data.queries / 100) * 200}px` }}
-                    ></div>
+                      className="chart-bar"
+                      style={{ 
+                        width: '8px', 
+                        height: `${qHeight}px`, 
+                        background: 'var(--primary-light)',
+                        boxShadow: '0 0 8px rgba(99,102,241,0.2)'
+                      }}
+                      title={`Queries: ${data.queries}`}
+                    />
                     <div 
-                      className="w-full bg-green-500 rounded-b"
-                      style={{ height: `${(data.resolved / 100) * 200}px` }}
-                    ></div>
+                      className="chart-bar"
+                      style={{ 
+                        width: '8px', 
+                        height: `${rHeight}px`, 
+                        background: 'var(--success)',
+                        boxShadow: '0 0 8px rgba(16,185,129,0.2)'
+                      }}
+                      title={`Resolved: ${data.resolved}`}
+                    />
                   </div>
-                  <span className="text-xs text-gray-600">{data.hour}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '6px' }}>{data.hour}</span>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--primary-light)' }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Total Queries</span>
             </div>
-            <div className="flex items-center justify-center space-x-6 mt-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span className="text-sm text-gray-600">Total Queries</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <span className="text-sm text-gray-600">Resolved</span>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--success)' }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Resolved</span>
             </div>
           </div>
         </div>
 
         {/* Top Queries */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
-              Top Query Types
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {topQueries.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-900">{item.query}</span>
-                      <span className="text-sm text-gray-600">{item.count}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${item.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MessageSquare size={18} color="var(--primary-light)" /> Top Query Categories
+          </h3>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, justifyContent: 'center' }}>
+            {topQueries.map((item, index) => (
+              <div key={index}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600 }}>{item.query}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{item.count} tickets ({item.percentage}%)</span>
                 </div>
-              ))}
-            </div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${item.percentage}%`, background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Sentiment Analysis */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <ThumbsUp className="w-5 h-5 mr-2 text-blue-600" />
-            Customer Sentiment Trends
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-7 gap-4">
-            {sentimentTrends.map((day, index) => (
-              <div key={index} className="text-center">
-                <div className="h-32 flex flex-col justify-end mb-2">
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ThumbsUp size={18} color="var(--primary-light)" /> Customer Sentiment Trends
+        </h3>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', height: '160px', alignItems: 'end' }}>
+          {sentimentTrends.map((day, index) => {
+            const posH = day.positive * 1.2;
+            const neuH = day.neutral * 1.2;
+            const negH = day.negative * 1.2;
+
+            return (
+              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', width: '20px', borderRadius: '4px', overflow: 'hidden' }}>
                   <div 
-                    className="bg-green-500 rounded-t"
-                    style={{ height: `${day.positive}%` }}
-                  ></div>
+                    className="chart-bar"
+                    style={{ height: `${posH}px`, background: 'var(--success)' }}
+                    title={`Positive: ${day.positive}%`}
+                  />
                   <div 
-                    className="bg-yellow-500"
-                    style={{ height: `${day.neutral}%` }}
-                  ></div>
+                    className="chart-bar"
+                    style={{ height: `${neuH}px`, background: 'var(--warning)' }}
+                    title={`Neutral: ${day.neutral}%`}
+                  />
                   <div 
-                    className="bg-red-500 rounded-b"
-                    style={{ height: `${day.negative}%` }}
-                  ></div>
+                    className="chart-bar"
+                    style={{ height: `${negH}px`, background: 'var(--danger)' }}
+                    title={`Negative: ${day.negative}%`}
+                  />
                 </div>
-                <span className="text-xs font-medium text-gray-600">{day.date}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: 600 }}>{day.date}</span>
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--success)' }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Positive</span>
           </div>
-          <div className="flex items-center justify-center space-x-6 mt-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span className="text-sm text-gray-600">Positive</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span className="text-sm text-gray-600">Neutral</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded"></div>
-              <span className="text-sm text-gray-600">Negative</span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--warning)' }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Neutral</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--danger)' }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Negative</span>
           </div>
         </div>
       </div>

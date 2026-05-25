@@ -149,7 +149,7 @@ const DataManagement: React.FC<Props> = ({ company }) => {
     products: ['Electronics', 'Wearables', 'Accessories', 'Software', 'Services']
   };
 
-  const handleAddFAQ = () => {
+  const handleAddFAQ = async () => {
     const faq: FAQItem = {
       id: `faq-${faqData.length + 1}`,
       question: newFAQ.question,
@@ -161,12 +161,30 @@ const DataManagement: React.FC<Props> = ({ company }) => {
       usage: 0
     };
 
+    try {
+      await fetch('/api/data/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: faq.id,
+          text: `Question: ${faq.question}\nAnswer: ${faq.answer}`,
+          category: faq.category,
+          metadata: { tags: faq.tags }
+        })
+      });
+    } catch (error) {
+      console.error('Error ingesting FAQ:', error);
+    }
+
     setFaqData([...faqData, faq]);
     setNewFAQ({ question: '', answer: '', category: '', tags: '', status: 'active' });
     setShowAddForm(false);
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
+    let specs = {};
+    try { specs = JSON.parse(newProduct.specifications || '{}'); } catch (e) {}
+
     const product: ProductInfo = {
       id: `prod-${productData.length + 1}`,
       name: newProduct.name,
@@ -174,10 +192,25 @@ const DataManagement: React.FC<Props> = ({ company }) => {
       category: newProduct.category,
       price: newProduct.price,
       features: newProduct.features.split(',').map(f => f.trim()).filter(f => f),
-      specifications: JSON.parse(newProduct.specifications || '{}'),
+      specifications: specs,
       lastUpdated: new Date(),
       status: newProduct.status
     };
+
+    try {
+      await fetch('/api/data/ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: product.id,
+          text: `Product: ${product.name}\nDescription: ${product.description}\nPrice: $${product.price}\nFeatures: ${product.features.join(', ')}`,
+          category: product.category,
+          metadata: { price: product.price }
+        })
+      });
+    } catch (error) {
+      console.error('Error ingesting product:', error);
+    }
 
     setProductData([...productData, product]);
     setNewProduct({ name: '', description: '', category: '', price: 0, features: '', specifications: '', status: 'active' });

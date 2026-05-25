@@ -11,7 +11,7 @@ import {
   User,
   Bot,
   AlertTriangle,
-  CheckCircle
+  CheckCircle2
 } from 'lucide-react';
 
 interface Company {
@@ -101,7 +101,7 @@ const VoiceCallInterface: React.FC<Props> = ({ company }) => {
     setCurrentCustomer('+1-555-0987');
     setIsCallActive(true);
     setTranscript('');
-    setAiResponse('Hello! This is IndraAssist AI support for ' + company.name + '. How can I help you today?');
+    setAiResponse('Hello! This is IndraAssist AI voice support for ' + company.name + '. How can I help you today?');
   };
 
   const handleEndCall = () => {
@@ -169,147 +169,151 @@ const VoiceCallInterface: React.FC<Props> = ({ company }) => {
     setAiResponse(response);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'resolved':
-        return 'text-green-600 bg-green-50';
+        return 'badge badge-success';
       case 'escalated':
-        return 'text-red-600 bg-red-50';
+        return 'badge badge-danger';
       case 'ongoing':
-        return 'text-blue-600 bg-blue-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'badge badge-info';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'resolved':
-        return <CheckCircle className="w-4 h-4" />;
+        return <CheckCircle2 className="w-3.5 h-3.5" />;
       case 'escalated':
-        return <AlertTriangle className="w-4 h-4" />;
+        return <AlertTriangle className="w-3.5 h-3.5" />;
       case 'ongoing':
-        return <Clock className="w-4 h-4" />;
       default:
-        return <Clock className="w-4 h-4" />;
+        return <Clock className="w-3.5 h-3.5" />;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeInUp" style={{ color: 'var(--text-primary)' }}>
       {/* Voice Call Interface */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Phone className="w-6 h-6 mr-2 text-blue-600" />
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Phone size={20} color="var(--primary-light)" />
             Voice Call Interface
           </h2>
-          <p className="text-sm text-gray-600 mt-1">AI-powered voice support for {company.name}</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>AI voice customer support simulation for {company.name}</p>
         </div>
 
-        <div className="p-6">
+        <div style={{ padding: '24px' }}>
           {!isCallActive ? (
-            <div className="text-center py-12">
-              <div className="flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mx-auto mb-6">
-                <PhoneCall className="w-12 h-12 text-green-600" />
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div className="animate-float" style={{ width: '80px', height: '80px', background: 'rgba(16,185,129,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                <PhoneCall size={36} color="var(--success)" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Receive Calls</h3>
-              <p className="text-gray-600 mb-6">IndraAssist is ready to handle customer voice calls</p>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>System Ready for Call Handling</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.83rem', marginBottom: '24px' }}>IndraAssist voice bot is active and listening for incoming dial triggers.</p>
               <button
                 onClick={handleIncomingCall}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2 mx-auto"
+                className="btn-primary glow-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
               >
-                <Phone className="w-5 h-5" />
-                <span>Simulate Incoming Call</span>
+                <Phone size={16} /> Simulate Inbound Call
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Active Call Header */}
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-full">
-                    <User className="w-5 h-5 text-white" />
+              <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'between', padding: '14px 20px', borderRadius: 'var(--radius)', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={18} color="white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{currentCustomer}</p>
-                    <p className="text-sm text-gray-600">Call Duration: {formatDuration(callDuration)}</p>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{currentCustomer}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Duration: {formatDuration(callDuration)}</div>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-700">Active Call</span>
+                <div className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="status-dot status-online animate-pulse" />
+                  <span>ONGOING CALL</span>
                 </div>
               </div>
 
               {/* Conversation Display */}
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '160px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px' }}>
                 {/* AI Response */}
                 {aiResponse && (
-                  <div className="flex items-start space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full">
-                      <Bot className="w-4 h-4 text-white" />
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'start', alignSelf: 'flex-start', maxWidth: '80%' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Bot size={14} color="var(--primary-light)" />
                     </div>
-                    <div className="flex-1 bg-blue-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-900">{aiResponse}</p>
-                      <span className="text-xs text-gray-500 mt-2 block">AI Response</span>
+                    <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', padding: '12px 16px', borderRadius: '16px' }}>
+                      <p style={{ fontSize: '0.83rem', lineHeight: 1.4, margin: 0 }}>{aiResponse}</p>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>IndraVoice Agent</span>
                     </div>
                   </div>
                 )}
 
                 {/* Customer Speech */}
                 {transcript && (
-                  <div className="flex items-start space-x-3 justify-end">
-                    <div className="flex-1 bg-gray-100 rounded-lg p-4 max-w-md">
-                      <p className="text-sm text-gray-900">{transcript}</p>
-                      <span className="text-xs text-gray-500 mt-2 block">Customer</span>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'start', alignSelf: 'flex-end', flexDirection: 'row-reverse', maxWidth: '80%' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <User size={14} color="var(--text-secondary)" />
                     </div>
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full">
-                      <User className="w-4 h-4 text-white" />
+                    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: '16px' }}>
+                      <p style={{ fontSize: '0.83rem', lineHeight: 1.4, margin: 0 }}>"{transcript}"</p>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block', textAlign: 'right' }}>Customer Speech (Real-time Transcript)</span>
                     </div>
                   </div>
                 )}
 
                 {/* Listening Indicator */}
                 {isListening && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 rounded-full">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-blue-700">Listening to customer...</span>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                    <div className="badge badge-purple animate-pulse" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Mic size={12} /> Listening for customer utterance...
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Call Controls */}
-              <div className="flex items-center justify-center space-x-4 pt-6 border-t">
+              <div style={{ display: 'flex', justifyItems: 'center', justifyContent: 'center', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
                 <button
                   onClick={() => setIsMuted(!isMuted)}
-                  className={`p-3 rounded-full ${isMuted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-gray-200 transition-colors`}
+                  className="btn-ghost"
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isMuted ? 'rgba(239,68,68,0.15)' : 'transparent', color: isMuted ? 'var(--danger)' : 'var(--text-secondary)', borderColor: isMuted ? 'var(--danger)' : 'var(--border)' }}
+                  title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
                 >
-                  {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                  {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
                 </button>
 
                 <button
                   onClick={simulateVoiceRecognition}
                   disabled={isListening}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="btn-primary"
+                  style={{ padding: '0 24px', height: '44px', fontSize: '0.83rem', opacity: isListening ? 0.7 : 1 }}
                 >
-                  {isListening ? 'Listening...' : 'Listen to Customer'}
+                  {isListening ? 'Processing speech...' : 'Simulate Customer Speaking'}
                 </button>
 
                 <button
                   onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                  className={`p-3 rounded-full ${!isSpeakerOn ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'} hover:bg-gray-200 transition-colors`}
+                  className="btn-ghost"
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: !isSpeakerOn ? 'rgba(239,68,68,0.15)' : 'transparent', color: !isSpeakerOn ? 'var(--danger)' : 'var(--text-secondary)', borderColor: !isSpeakerOn ? 'var(--danger)' : 'var(--border)' }}
+                  title={isSpeakerOn ? 'Mute speaker' : 'Unmute speaker'}
                 >
-                  {isSpeakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                  {isSpeakerOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
                 </button>
 
                 <button
                   onClick={handleEndCall}
-                  className="p-3 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  className="btn-primary glow-danger"
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--danger)' }}
+                  title="Hang up call"
                 >
-                  <PhoneOff className="w-5 h-5" />
+                  <PhoneOff size={18} color="white" />
                 </button>
               </div>
             </div>
@@ -318,30 +322,30 @@ const VoiceCallInterface: React.FC<Props> = ({ company }) => {
       </div>
 
       {/* Call Logs */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Call Logs</h3>
-          <p className="text-sm text-gray-600 mt-1">Voice call history and outcomes</p>
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Recent Call Logs</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>Log histories for automated telephone queues.</p>
         </div>
-        <div className="p-6">
-          <div className="space-y-4">
+        <div style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {callLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
-                    <Phone className="w-5 h-5 text-blue-600" />
+              <div key={log.id} style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'between', padding: '14px 16px', borderRadius: 'var(--radius)', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Phone size={16} color="var(--primary-light)" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{log.customerPhone}</p>
-                    <p className="text-sm text-gray-600">{log.issue}</p>
-                    <p className="text-xs text-gray-500">
-                      {log.timestamp.toLocaleString()} • Duration: {log.duration}
-                    </p>
+                    <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{log.customerPhone}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{log.issue}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      {log.timestamp.toLocaleString()} · Duration: {log.duration}
+                    </div>
                   </div>
                 </div>
-                <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full ${getStatusColor(log.status)}`}>
+                <div className={getStatusBadgeClass(log.status)} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {getStatusIcon(log.status)}
-                  <span className="text-sm font-medium capitalize">{log.status}</span>
+                  <span style={{ textTransform: 'capitalize' }}>{log.status}</span>
                 </div>
               </div>
             ))}

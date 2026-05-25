@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, Palette, Globe, Database, Save } from 'lucide-react';
+import { Building2, Palette, Globe, Database, Save, CheckCircle2 } from 'lucide-react';
 
 interface Company {
   name: string;
@@ -16,6 +16,12 @@ interface Props {
 const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   const [formData, setFormData] = useState(company);
   const [activeSection, setActiveSection] = useState('basic');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const industries = [
     'Technology', 'E-commerce', 'Banking & Finance', 'Healthcare',
@@ -24,46 +30,47 @@ const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   ];
 
   const colorOptions = [
-    '#2563EB', '#7C3AED', '#059669', '#DC2626',
-    '#EA580C', '#9333EA', '#0891B2', '#BE123C'
+    '#6366f1', '#8b5cf6', '#10b981', '#ef4444',
+    '#f59e0b', '#06b6d4', '#ec4899', '#3b82f6'
   ];
 
   const logoEmojis = ['🏢', '🏬', '🏭', '🏦', '🏥', '📱', '💻', '🛒', '✈️', '🏨'];
 
   const handleSave = () => {
     setCompany(formData);
+    triggerToast('Workspace settings saved successfully!');
   };
 
   const sections = [
     { id: 'basic', label: 'Basic Info', icon: Building2 },
-    { id: 'branding', label: 'Branding', icon: Palette },
-    { id: 'languages', label: 'Languages', icon: Globe },
+    { id: 'branding', label: 'Branding Layout', icon: Palette },
+    { id: 'languages', label: 'Language Settings', icon: Globe },
     { id: 'knowledge', label: 'Knowledge Base', icon: Database }
   ];
 
   const renderBasicInfo = () => (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fadeIn">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
           Company Name
         </label>
         <input
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="input-dark"
           placeholder="Enter company name"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Industry
+        <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          Industry Segment
         </label>
         <select
           value={formData.industry}
           onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="input-dark"
         >
           {industries.map((industry) => (
             <option key={industry} value={industry}>
@@ -76,37 +83,48 @@ const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   );
 
   const renderBranding = () => (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fadeIn">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Primary Color
+        <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          Primary Brand Color
         </label>
-        <div className="grid grid-cols-4 gap-3">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
           {colorOptions.map((color) => (
             <button
               key={color}
               onClick={() => setFormData({ ...formData, primaryColor: color })}
-              className={`w-12 h-12 rounded-lg border-2 ${
-                formData.primaryColor === color ? 'border-gray-400 ring-2 ring-gray-300' : 'border-gray-200'
-              }`}
-              style={{ backgroundColor: color }}
+              style={{ 
+                backgroundColor: color, 
+                height: '44px',
+                borderRadius: '8px',
+                border: formData.primaryColor === color ? '2px solid white' : '1px solid var(--border)',
+                cursor: 'pointer',
+                boxShadow: formData.primaryColor === color ? '0 0 12px rgba(255,255,255,0.3)' : 'none',
+                transition: 'all 0.15s'
+              }}
             />
           ))}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Company Logo/Icon
+        <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+          Workspace Logo / Emoji
         </label>
-        <div className="grid grid-cols-5 gap-3">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
           {logoEmojis.map((emoji) => (
             <button
               key={emoji}
               onClick={() => setFormData({ ...formData, logo: emoji })}
-              className={`text-2xl p-3 rounded-lg border-2 ${
-                formData.logo === emoji ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-              }`}
+              className="btn-ghost"
+              style={{
+                fontSize: '1.5rem',
+                padding: '10px',
+                borderRadius: '8px',
+                background: formData.logo === emoji ? 'rgba(99,102,241,0.15)' : 'transparent',
+                borderColor: formData.logo === emoji ? 'var(--primary)' : 'var(--border)',
+                cursor: 'pointer'
+              }}
             >
               {emoji}
             </button>
@@ -117,26 +135,26 @@ const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   );
 
   const renderLanguages = () => (
-    <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">Supported Languages</h4>
-        <p className="text-sm text-blue-700">
-          IndraAssist automatically detects and responds in the customer's preferred language.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fadeIn">
+      <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', padding: '16px', borderRadius: '8px' }}>
+        <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-light)', marginBottom: '6px' }}>Supported Languages</h4>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', lineHeight: 1.4, margin: 0 }}>
+          IndraAssist automatically detects user locale and queries to reply in their localized preferred language.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
         {[
           'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
           'Chinese', 'Japanese', 'Korean', 'Arabic', 'Hindi', 'Russian'
         ].map((language) => (
-          <label key={language} className="flex items-center space-x-2">
+          <label key={language} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.83rem', cursor: 'pointer' }}>
             <input
               type="checkbox"
-              defaultChecked={['English', 'Spanish', 'French'].includes(language)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="checkbox-dark"
+              defaultChecked={['English', 'Spanish', 'French', 'Hindi'].includes(language)}
             />
-            <span className="text-sm text-gray-700">{language}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{language}</span>
           </label>
         ))}
       </div>
@@ -144,38 +162,34 @@ const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   );
 
   const renderKnowledgeBase = () => (
-    <div className="space-y-6">
-      <div className="bg-green-50 p-4 rounded-lg">
-        <h4 className="font-medium text-green-900 mb-2">Knowledge Base Integration</h4>
-        <p className="text-sm text-green-700">
-          Upload your company's FAQ documents, policies, and product information.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="animate-fadeIn">
+      <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', padding: '16px', borderRadius: '8px' }}>
+        <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--success)', marginBottom: '6px' }}>Knowledge Base Integration</h4>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', lineHeight: 1.4, margin: 0 }}>
+          Upload your organization's manuals, FAQ sheets, and literature files to train the AI persona (Growth/Enterprise).
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            FAQ Documents
+          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            FAQ Documentation
           </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <Database className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-sm text-gray-600 mb-2">Upload FAQ documents</p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-              Choose Files
-            </button>
+          <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '24px', textAlign: 'center' }}>
+            <Database style={{ margin: '0 auto 12px', color: 'var(--text-muted)' }} size={32} />
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Drag & drop FAQ documents (PDF, DOCX)</p>
+            <button className="btn-ghost" type="button" style={{ padding: '6px 16px', fontSize: '0.78rem' }} onClick={() => alert('Mock upload triggered.')}>Choose Files</button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Product Catalog
+          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            Product Catalog Sheet
           </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <Database className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-sm text-gray-600 mb-2">Upload product information</p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-              Choose Files
-            </button>
+          <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '24px', textAlign: 'center' }}>
+            <Database style={{ margin: '0 auto 12px', color: 'var(--text-muted)' }} size={32} />
+            <p style={{ fontSize: '0.83rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Upload inventory lists or sheets (CSV, JSON)</p>
+            <button className="btn-ghost" type="button" style={{ padding: '6px 16px', fontSize: '0.78rem' }} onClick={() => alert('Mock upload triggered.')}>Choose Files</button>
           </div>
         </div>
       </div>
@@ -198,59 +212,65 @@ const CompanyConfig: React.FC<Props> = ({ company, setCompany }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Configuration Sidebar */}
-      <div className="lg:col-span-1">
-        <div className="bg-white rounded-lg shadow-sm border p-4">
-          <h3 className="font-semibold text-gray-900 mb-4">Configuration Sections</h3>
-          <nav className="space-y-2">
+    <div style={{ color: 'var(--text-primary)' }} className="animate-fadeInUp">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', 
+          background: 'var(--bg-surface)', border: '1px solid var(--success)', 
+          borderRadius: 'var(--radius)', padding: '12px 24px', zIndex: 1000,
+          display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          animation: 'slideInRight 0.3s ease'
+        }}>
+          <CheckCircle2 size={18} color="var(--success)" />
+          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toastMessage}</span>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
+        
+        {/* Navigation Sidebar */}
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '16px', height: 'fit-content' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px', paddingLeft: '8px' }}>SETUP OPTIONS</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {sections.map((section) => {
               const Icon = section.icon;
+              const isActive = activeSection === section.id;
               return (
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 text-left rounded-lg transition-colors ${
-                    activeSection === section.id
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className={`nav-item w-full ${isActive ? 'active' : ''}`}
+                  style={{ border: 'none', background: 'transparent', outline: 'none', textAlign: 'left' }}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{section.label}</span>
+                  <Icon size={16} />
+                  <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>{section.label}</span>
                 </button>
               );
             })}
-          </nav>
+          </div>
         </div>
-      </div>
 
-      {/* Configuration Content */}
-      <div className="lg:col-span-2">
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {sections.find(s => s.id === activeSection)?.label} Configuration
+        {/* Form Panel */}
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden', gridColumn: 'span 2' }}>
+          <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>
+              {sections.find(s => s.id === activeSection)?.label} Setup
             </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Customize IndraAssist for your company's specific needs
-            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '4px' }}>Configure settings to direct IndraAssist integrations.</p>
           </div>
 
-          <div className="p-6">
+          <div style={{ padding: '24px' }}>
             {renderActiveSection()}
           </div>
 
-          <div className="p-6 border-t bg-gray-50 flex justify-end">
-            <button
-              onClick={handleSave}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Configuration</span>
+          <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)', display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="btn-primary" onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Save size={14} /> Save Settings
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

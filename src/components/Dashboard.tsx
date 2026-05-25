@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   MessageSquare, 
   Clock, 
-  CheckCircle, 
+  CheckCircle2, 
   AlertCircle, 
   TrendingUp, 
   Users, 
@@ -29,7 +29,8 @@ const Dashboard: React.FC<Props> = ({ company }) => {
       change: '+12%',
       changeType: 'increase',
       icon: MessageSquare,
-      color: 'blue'
+      color: 'var(--primary-light)',
+      bg: 'rgba(99,102,241,0.15)'
     },
     {
       title: 'Avg Response Time',
@@ -37,15 +38,17 @@ const Dashboard: React.FC<Props> = ({ company }) => {
       change: '-0.3s',
       changeType: 'decrease',
       icon: Clock,
-      color: 'green'
+      color: 'var(--success)',
+      bg: 'rgba(16,185,129,0.15)'
     },
     {
       title: 'Resolved Today',
       value: '148',
       change: '+23%',
       changeType: 'increase',
-      icon: CheckCircle,
-      color: 'emerald'
+      icon: CheckCircle2,
+      color: 'var(--info)',
+      bg: 'rgba(6,182,212,0.15)'
     },
     {
       title: 'Customer Satisfaction',
@@ -53,7 +56,8 @@ const Dashboard: React.FC<Props> = ({ company }) => {
       change: '+2.1%',
       changeType: 'increase',
       icon: TrendingUp,
-      color: 'purple'
+      color: 'var(--accent-light)',
+      bg: 'rgba(139,92,246,0.15)'
     }
   ];
 
@@ -73,151 +77,129 @@ const Dashboard: React.FC<Props> = ({ company }) => {
     { language: 'Other', percentage: 3, count: 45 }
   ];
 
-  const getSentimentColor = (sentiment: string) => {
+  const getSentimentBadge = (sentiment: string) => {
     switch (sentiment) {
-      case 'positive': return 'text-green-600 bg-green-50';
-      case 'negative': return 'text-red-600 bg-red-50';
-      default: return 'text-yellow-600 bg-yellow-50';
+      case 'positive': return <span className="badge badge-success">Positive</span>;
+      case 'negative': return <span className="badge badge-danger">Negative</span>;
+      default: return <span className="badge badge-neutral">Neutral</span>;
     }
   };
 
-  const getStatColor = (color: string) => {
-    const colors = {
-      blue: 'text-blue-600 bg-blue-50',
-      green: 'text-green-600 bg-green-50',
-      emerald: 'text-emerald-600 bg-emerald-50',
-      purple: 'text-purple-600 bg-purple-50'
-    };
-    return colors[color as keyof typeof colors] || colors.blue;
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeInUp" style={{ color: 'var(--text-primary)' }}>
       {/* Company Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="text-4xl">{company.logo}</div>
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{ fontSize: '2.5rem' }}>{company.logo}</span>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{company.name}</h2>
-              <p className="text-gray-600">{company.industry} • Support Dashboard</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', margin: 0 }}>{company.name}</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '4px' }}>{company.industry} · Support Command Center</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2 px-4 py-2 bg-green-50 rounded-full">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-green-700">AI System Active</span>
+          <div className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px' }}>
+            <span className="status-dot status-online animate-pulse" />
+            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>AI Core Engine Live</span>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg ${getStatColor(stat.color)}`}>
-                  <Icon className="w-6 h-6" />
+            <div key={index} className="stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: stat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={20} color={stat.color} />
                 </div>
-                <span className={`text-sm font-medium ${
-                  stat.changeType === 'increase' ? 'text-green-600' : 'text-blue-600'
-                }`}>
+                <span className="badge badge-success" style={{ 
+                  background: stat.changeType === 'increase' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)',
+                  color: stat.changeType === 'increase' ? '#34d399' : '#818cf8',
+                  border: 'none', fontSize: '0.65rem'
+                }}>
                   {stat.change}
                 </span>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-sm text-gray-600 mt-1">{stat.title}</p>
+                <span style={{ fontSize: '1.8rem', fontWeight: '800' }}>{stat.value}</span>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '4px', fontWeight: 500 }}>{stat.title}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2 text-blue-600" />
-              Recent Activity
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                    <p className="text-xs text-gray-600">Customer: {activity.customer}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSentimentColor(activity.sentiment)}`}>
-                      {activity.sentiment}
-                    </span>
-                    <span className="text-xs text-gray-500">{activity.time}</span>
-                  </div>
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle size={18} color="var(--primary-light)" /> Recent Activities
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {recentActivities.map((activity, index) => (
+              <div key={index} style={{ padding: '12px', borderRadius: 'var(--radius)', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', display: 'flex', justifyContent: 'between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: '0.83rem', fontWeight: 600, margin: 0 }}>{activity.action}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>Customer: {activity.customer}</p>
                 </div>
-              ))}
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {getSentimentBadge(activity.sentiment)}
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{activity.time}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Language Distribution */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Globe className="w-5 h-5 mr-2 text-blue-600" />
-              Language Distribution
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {languageStats.map((lang, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-900 w-16">{lang.language}</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2 w-32">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full" 
-                        style={{ width: `${lang.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-semibold text-gray-900">{lang.percentage}%</span>
-                    <p className="text-xs text-gray-600">{lang.count} queries</p>
+        <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Globe size={18} color="var(--primary-light)" /> Language Distribution
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {languageStats.map((lang, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, marginRight: '16px' }}>
+                  <span style={{ fontSize: '0.83rem', fontWeight: 600, width: '60px' }}>{lang.language}</span>
+                  <div className="progress-bar" style={{ flex: 1 }}>
+                    <div 
+                      className="progress-fill" 
+                      style={{ 
+                        width: `${lang.percentage}%`,
+                        background: 'linear-gradient(90deg, var(--primary), var(--accent))'
+                      }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.83rem', fontWeight: 700 }}>{lang.percentage}%</span>
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0 }}>{lang.count} queries</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* AI Performance Metrics */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-blue-600" />
-            AI Performance Metrics
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">98.7%</div>
-              <p className="text-sm text-gray-600">Query Resolution Rate</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">2.3%</div>
-              <p className="text-sm text-gray-600">Human Escalation Rate</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">4.8/5</div>
-              <p className="text-sm text-gray-600">Average Satisfaction Score</p>
-            </div>
+      <div className="glass" style={{ borderRadius: 'var(--radius-lg)', padding: '24px' }}>
+        <h3 style={{ fontSize: '1.05rem', fontWeight: '700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Brain size={18} color="var(--primary-light)" /> AI Performance Metrics
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', textAlign: 'center' }}>
+          <div className="stat-card" style={{ padding: '20px', background: 'rgba(99,102,241,0.04)' }}>
+            <div className="gradient-text" style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '6px' }}>98.7%</div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.83rem', fontWeight: 500, margin: 0 }}>Query Resolution Rate</p>
+          </div>
+          <div className="stat-card" style={{ padding: '20px', background: 'rgba(16,185,129,0.04)' }}>
+            <div className="gradient-text" style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '6px' }}>2.3%</div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.83rem', fontWeight: 500, margin: 0 }}>Human Escalation Rate</p>
+          </div>
+          <div className="stat-card" style={{ padding: '20px', background: 'rgba(139,92,246,0.04)' }}>
+            <div className="gradient-text" style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '6px' }}>4.8 / 5</div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.83rem', fontWeight: 500, margin: 0 }}>Average satisfaction score</p>
           </div>
         </div>
       </div>
